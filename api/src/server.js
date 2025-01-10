@@ -1,6 +1,12 @@
 import cors from "cors";
 import express from "express";
 import mysql from "mysql2/promise";
+import { customerRoutes } from "./routes/customer.js";
+import { categoryRoutes } from "./routes/category.js";
+import { orderRoutes } from "./routes/order.js";
+import { orderLineRoutes } from "./routes/orderLine.js";
+import { productRoutes } from "./routes/product.js";
+import { supplierRoutes } from "./routes/supplier.js";
 
 const app = express();
 const port = 3001;
@@ -17,6 +23,12 @@ const port = 3001;
       app
         .use(cors())
         .use(express.json())
+        .use("/api/categories", categoryRoutes(connection))
+        .use("/api/suppliers", supplierRoutes(connection))
+        .use("/api/customers", customerRoutes(connection))
+        .use("/api/orders", orderRoutes(connection))
+        .use("/api/order-lines", orderLineRoutes(connection))
+        .use("/api/products", productRoutes(connection))
         .listen(port, () => {
           console.log(`Server is running on port ${port}`);
         });
