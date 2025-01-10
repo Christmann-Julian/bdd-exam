@@ -1,57 +1,103 @@
 import { Router } from "express";
+import { body, param, validationResult } from "express-validator";
 
 export const categoryRoutes = (db) =>
   Router()
     .get("/", async (req, res) => {
       try {
-        const [rows] = await db.query("SELECT * FROM category");
+        const [rows] = await db.execute("SELECT * FROM category");
         res.status(200).json(rows);
       } catch (error) {
         res.status(500).json({ error: error.message });
       }
     })
-    .get("/:id", async (req, res) => {
+    .get("/:id", [param("id").isInt()], async (req, res) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
       try {
         const { id } = req.params;
-        const [rows] = await db.query(`SELECT * FROM category WHERE id = ${id}`);
-        
+        const [rows] = await db.execute("SELECT * FROM category WHERE id = ?", [id]);
+
+        if (rows.length === 0) {
+          return res.status(404).json({ message: "Category not found" });
+        }
+
         res.status(200).json(rows);
       } catch (error) {
         res.status(500).json({ error: error.message });
       }
     })
-    .post("/", async (req, res) => {
-      try {
-        const { name } = req.body;
+    .post(
+      "/",
+      [body("name").isString().notEmpty()],
+      async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          return res.status(400).json({ errors: errors.array() });
+        }
 
-        const [result] = await db.query(`INSERT INTO category (name) VALUES ('${name}')`);
+        try {
+          const { name } = req.body;
+          const [result] = await db.execute(
+            "INSERT INTO category (name) VALUES (?)",
+            [name]
+          );
 
-        res
-          .status(201)
-          .json({
+          res.status(201).json({
             id: result.insertId,
             name,
           });
-      } catch (error) {
-        res.status(500).json({ error: error.message });
+        } catch (error) {
+          res.status(500).json({ error: error.message });
+        }
       }
-    })
-    .put("/:id", async (req, res) => {
+    )
+    .put(
+      "/:id",
+      [
+        param("id").isInt(),
+        body("name").isString().notEmpty(),
+      ],
+      async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          return res.status(400).json({ errors: errors.array() });
+        }
+
+        try {
+          const { id } = req.params;
+          const { name } = req.body;
+          const [result] = await db.execute(
+            "UPDATE category SET name = ? WHERE id = ?",
+            [name, id]
+          );
+
+          if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Category not found" });
+          }
+
+          res.status(200).json({ id, name });
+        } catch (error) {
+          res.status(500).json({ error: error.message });
+        }
+      }
+    )
+    .delete("/:id", [param("id").isInt()], async (req, res) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
       try {
         const { id } = req.params;
-        const { name } = req.body;
+        const [result] = await db.execute("DELETE FROM category WHERE id = ?", [id]);
 
-        await db.query(`UPDATE category SET name = '${name}' WHERE id = ${id}`);
-
-        res.status(200).json({ id, name });
-      } catch (error) {
-        res.status(500).json({ error: error.message });
-      }
-    })
-    .delete("/:id", async (req, res) => {
-      try {
-        const { id } = req.params;
-        await db.query(`DELETE FROM category WHERE id = ${id}`);
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ message: "Category not found" });
+        }
 
         res.status(204).send();
       } catch (error) {

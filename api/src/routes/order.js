@@ -1,58 +1,109 @@
 import { Router } from "express";
+import { body, param, validationResult } from "express-validator";
 
 export const orderRoutes = (db) =>
   Router()
     .get("/", async (req, res) => {
       try {
-        const [rows] = await db.query("SELECT * FROM `order`");
+        const [rows] = await db.execute("SELECT * FROM `order`");
         res.status(200).json(rows);
       } catch (error) {
         res.status(500).json({ error: error.message });
       }
     })
-    .get("/:id", async (req, res) => {
+    .get("/:id", [param("id").isInt()], async (req, res) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
       try {
         const { id } = req.params;
-        const [rows] = await db.query(`SELECT * FROM \`order\` WHERE id = ${id}`);
-        
+        const [rows] = await db.execute("SELECT * FROM `order` WHERE id = ?", [
+          id,
+        ]);
+
+        if (rows.length === 0) {
+          return res.status(404).json({ message: "Order not found" });
+        }
+
         res.status(200).json(rows);
       } catch (error) {
         res.status(500).json({ error: error.message });
       }
     })
-    .post("/", async (req, res) => {
-      try {
-        const { order_date, customer_id } = req.body;
+    .post(
+      "/",
+      [body("order_date").isISO8601().toDate(), body("customer_id").isInt()],
+      async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          return res.status(400).json({ errors: errors.array() });
+        }
 
-        const [result] = await db.query(`INSERT INTO \`order\` (order_date, customer_id) VALUES ('${order_date}', ${customer_id})`);
+        try {
+          const { order_date, customer_id } = req.body;
+          const [result] = await db.execute(
+            "INSERT INTO `order` (order_date, customer_id) VALUES (?, ?)",
+            [order_date, customer_id]
+          );
 
-        res
-          .status(201)
-          .json({
+          res.status(201).json({
             id: result.insertId,
             order_date,
             customer_id,
           });
-      } catch (error) {
-        res.status(500).json({ error: error.message });
+        } catch (error) {
+          res.status(500).json({ error: error.message });
+        }
       }
-    })
-    .put("/:id", async (req, res) => {
+    )
+    .put(
+      "/:id",
+      [
+        param("id").isInt(),
+        body("order_date").isISO8601().toDate(),
+        body("customer_id").isInt(),
+      ],
+      async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          return res.status(400).json({ errors: errors.array() });
+        }
+
+        try {
+          const { id } = req.params;
+          const { order_date, customer_id } = req.body;
+          const [result] = await db.execute(
+            "UPDATE `order` SET order_date = ?, customer_id = ? WHERE id = ?",
+            [order_date, customer_id, id]
+          );
+
+          if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Order not found" });
+          }
+
+          res.status(200).json({ id, order_date, customer_id });
+        } catch (error) {
+          res.status(500).json({ error: error.message });
+        }
+      }
+    )
+    .delete("/:id", [param("id").isInt()], async (req, res) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
       try {
         const { id } = req.params;
-        const { order_date, customer_id } = req.body;
+        const [result] = await db.execute("DELETE FROM `order` WHERE id = ?", [
+          id,
+        ]);
 
-        await db.query(`UPDATE \`order\` SET order_date = '${order_date}', customer_id = ${customer_id} WHERE id = ${id}`);
-
-        res.status(200).json({ id, order_date, customer_id });
-      } catch (error) {
-        res.status(500).json({ error: error.message });
-      }
-    })
-    .delete("/:id", async (req, res) => {
-      try {
-        const { id } = req.params;
-        await db.query(`DELETE FROM \`order\` WHERE id = ${id}`);
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ message: "Order not found" });
+        }
 
         res.status(204).send();
       } catch (error) {
