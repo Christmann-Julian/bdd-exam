@@ -7,6 +7,8 @@ import { orderRoutes } from "./routes/order.js";
 import { orderLineRoutes } from "./routes/orderLine.js";
 import { productRoutes } from "./routes/product.js";
 import { supplierRoutes } from "./routes/supplier.js";
+import { searchRoutes } from "./routes/search.js";
+import { statisticRoutes } from "./routes/statistic.js";
 
 const app = express();
 const port = 3001;
@@ -29,6 +31,8 @@ const port = 3001;
         .use("/api/orders", orderRoutes(connection))
         .use("/api/order-lines", orderLineRoutes(connection))
         .use("/api/products", productRoutes(connection))
+        .use("/api/search", searchRoutes(connection))
+        .use("/api/statistics", statisticRoutes(connection))
         .listen(port, () => {
           console.log(`Server is running on port ${port}`);
         });

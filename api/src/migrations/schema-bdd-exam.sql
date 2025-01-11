@@ -30,7 +30,9 @@ CREATE TABLE IF NOT EXISTS `product` (
 
 CREATE TABLE IF NOT EXISTS `order` (
     id int UNSIGNED NOT NULL AUTO_INCREMENT,
+    reference varchar(255) NOT NULL,
     order_date datetime NOT NULL,
+    status varchar(255) NOT NULL DEFAULT 'en attente',
     customer_id int UNSIGNED NOT NULL,
     PRIMARY KEY (id),
     FOREIGN KEY (customer_id) REFERENCES customer(id)
