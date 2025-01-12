@@ -131,3 +131,8 @@ INSERT INTO `order_line` (`quantity`, `product_id`, `order_id`) VALUES
 (2, 1, 25),
 (3, 2, 25),
 (1, 3, 26);
+
+-- password : Vinci#2024
+INSERT INTO `user` (`lastname`, `firstname`, `email`, `password`, `role`) VALUES 
+("admin", "admin", "admin@admin.fr", "$2b$10$s8WylKSR6RP5Q1aoGgGym.46fgu9lNDDY3OlGQ2dMvFoj78LJNIWK", "admin"),
+("user", "user", "user@user.fr", "$2b$10$s8WylKSR6RP5Q1aoGgGym.46fgu9lNDDY3OlGQ2dMvFoj78LJNIWK", "user");
